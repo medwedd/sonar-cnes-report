@@ -22,6 +22,7 @@ import fr.cnes.sonar.report.exporters.IExporter;
 import fr.cnes.sonar.report.exporters.JsonExporter;
 import fr.cnes.sonar.report.exporters.XmlExporter;
 import fr.cnes.sonar.report.exporters.docx.DocXExporter;
+import fr.cnes.sonar.report.exporters.html.HTMLExporter;
 import fr.cnes.sonar.report.exporters.xlsx.XlsXExporter;
 import fr.cnes.sonar.report.model.ProfileMetaData;
 import fr.cnes.sonar.report.model.QualityProfile;
@@ -40,145 +41,169 @@ import java.util.logging.Logger;
 
 public class ReportFactory {
 
-    /** Property for the word report filename. */
-    private static final String REPORT_FILENAME = "report.output";
-    /** Property for the excel report filename. */
-    private static final String ISSUES_FILENAME = "issues.output";
-    /** Pattern for the name of the directory containing configuration files. */
-    private static final String CONF_FOLDER_PATTERN = "%s/conf";
-    /** Error message returned when the program cannot create a folder because it already exists. */
-    private static final String CNES_MKDIR_ERROR = "Impossible to create the following directory: %s";
-    /** Placeholder for the base directory of reporting. */
-    private static final String BASEDIR = "BASEDIR";
-    /** Placeholder for the date of reporting. */
-    private static final String DATE = "DATE";
-    /** Placeholder for the name of the project. */
-    private static final String NAME = "NAME";
-    /** Logger of this class. */
-    private static final Logger LOGGER = Logger.getLogger(ReportFactory.class.getName());
+   /**
+    * Property for the word report filename.
+    */
+   private static final String REPORT_FILENAME = "report.output";
+   /**
+    * Property for the excel report filename.
+    */
+   private static final String ISSUES_FILENAME = "issues.output";
+   /**
+    * Pattern for the name of the directory containing configuration files.
+    */
+   private static final String CONF_FOLDER_PATTERN = "%s/conf";
+   /**
+    * Error message returned when the program cannot create a folder because it already exists.
+    */
+   private static final String CNES_MKDIR_ERROR = "Impossible to create the following directory: %s";
+   /**
+    * Placeholder for the base directory of reporting.
+    */
+   private static final String BASEDIR = "BASEDIR";
+   /**
+    * Placeholder for the date of reporting.
+    */
+   private static final String DATE = "DATE";
+   /**
+    * Placeholder for the name of the project.
+    */
+   private static final String NAME = "NAME";
+   /**
+    * Logger of this class.
+    */
+   private static final Logger LOGGER = Logger.getLogger(ReportFactory.class.getName());
 
-    /**
-     * Private constructor.
-     */
-    private ReportFactory() {}
+   /**
+    * Private constructor.
+    */
+   private ReportFactory() {
+   }
 
-    /**
-     * Generate report from simple parameters.
-     * @param configuration Contains all configuration details.
-     * @param model Contains the report as a Java object model.
-     * @throws IOException Caused by I/O.
-     * @throws XmlException Caused by XML error.
-     * @throws BadExportationDataTypeException Caused by export.
-     * @throws OpenXML4JException Caused by Apache library.
-     */
-    public static void report(final ReportConfiguration configuration, final Report model)
-            throws IOException, XmlException, BadExportationDataTypeException, OpenXML4JException {
+   /**
+    * Generate report from simple parameters.
+    *
+    * @param configuration Contains all configuration details.
+    * @param model         Contains the report as a Java object model.
+    * @throws IOException                     Caused by I/O.
+    * @throws XmlException                    Caused by XML error.
+    * @throws BadExportationDataTypeException Caused by export.
+    * @throws OpenXML4JException              Caused by Apache library.
+    */
+   public static void report(final ReportConfiguration configuration, final Report model) throws IOException, XmlException, BadExportationDataTypeException, OpenXML4JException {
 
-        // Files exporters : export the resources in the correct file type
-        final DocXExporter docXExporter = new DocXExporter();
-        final XmlExporter profileExporter = new XmlExporter();
-        final JsonExporter gateExporter = new JsonExporter();
-        final XlsXExporter issuesExporter = new XlsXExporter();
+      // Files exporters : export the resources in the correct file type
+      final DocXExporter docXExporter = new DocXExporter();
+      final XmlExporter profileExporter = new XmlExporter();
+      final JsonExporter gateExporter = new JsonExporter();
+      final XlsXExporter issuesExporter = new XlsXExporter();
+      final HTMLExporter htmlExporter = new HTMLExporter();
 
-        // Export analysis configuration if requested.
-        if(configuration.isEnableConf()) {
-            createConfigurationFiles(configuration, model, profileExporter, gateExporter);
-        }
+      // Export analysis configuration if requested.
+      if (configuration.isEnableConf()) {
+         createConfigurationFiles(configuration, model, profileExporter, gateExporter);
+      }
 
-        // Export issues and metrics in report if requested.
-        if(configuration.isEnableReport()) {
-            // prepare docx report's filename
-            final String docXFilename = formatFilename(REPORT_FILENAME, configuration.getOutput(), model.getProjectName());
-            // export the full docx report
-            docXExporter.export(model, docXFilename, configuration.getTemplateReport());
-        }
+      // Export issues and metrics in report if requested.
+      if (configuration.isEnableReport()) {
 
-        // Export issues in spreadsheet if requested.
-        if(configuration.isEnableSpreadsheet()) {
-            // construct the xlsx filename by replacing date and name
-            final String xlsXFilename = formatFilename(ISSUES_FILENAME, configuration.getOutput(), model.getProjectName());
-            // export the xlsx issues' list
-            issuesExporter.export(model, xlsXFilename, configuration.getTemplateSpreadsheet());
-        }
-    }
+         // prepare docx report's filename
+         final String docXFilename = formatFilename(REPORT_FILENAME, configuration.getOutput(), model.getProjectName());
+         // export the full docx report
+         htmlExporter.export(model, docXFilename, configuration.getTemplateReport());
+//         docXExporter.export(model, docXFilename, configuration.getTemplateReport());
+      }
 
-    /**
-     * Generate files containing analysis configuration.
-     * @param configuration Contains all configuration details.
-     * @param model Contains the report as a Java object model.
-     * @param profileExporter Exporter for quality profiles.
-     * @param gateExporter Exporter for quality gates.
-     * @throws IOException Caused by I/O.
-     * @throws XmlException Caused by XML error.
-     * @throws BadExportationDataTypeException Caused by export.
-     * @throws OpenXML4JException Caused by Apache library.
-     */
-    private static void createConfigurationFiles(final ReportConfiguration configuration, final Report model,
-                                                 final XmlExporter profileExporter, final JsonExporter gateExporter)
-            throws XmlException, BadExportationDataTypeException, OpenXML4JException, IOException {
+      // Export issues in spreadsheet if requested.
+      if (configuration.isEnableSpreadsheet()) {
+         // construct the xlsx filename by replacing date and name
+         final String xlsXFilename = formatFilename(ISSUES_FILENAME, configuration.getOutput(), model.getProjectName());
+         // export the xlsx issues' list
+         issuesExporter.export(model, xlsXFilename, configuration.getTemplateSpreadsheet());
+      }
+   }
 
-        // full path to the configuration folder
-        final String confDirectory = String.format(CONF_FOLDER_PATTERN, configuration.getOutput());
+   /**
+    * Generate files containing analysis configuration.
+    *
+    * @param configuration   Contains all configuration details.
+    * @param model           Contains the report as a Java object model.
+    * @param profileExporter Exporter for quality profiles.
+    * @param gateExporter    Exporter for quality gates.
+    * @throws IOException                     Caused by I/O.
+    * @throws XmlException                    Caused by XML error.
+    * @throws BadExportationDataTypeException Caused by export.
+    * @throws OpenXML4JException              Caused by Apache library.
+    */
+   private static void createConfigurationFiles(final ReportConfiguration configuration,
+                                                final Report model,
+                                                final XmlExporter profileExporter,
+                                                final JsonExporter gateExporter) throws XmlException, BadExportationDataTypeException, OpenXML4JException, IOException {
 
-        // create the configuration folder
-        final File configFolder = new File(confDirectory);
-        final boolean success = configFolder.mkdirs();
-        if (!success && !configFolder.exists()) {
-            // Directory creation failed
-            final String message = String.format(CNES_MKDIR_ERROR, confDirectory);
-            LOGGER.warning(message);
-        }
+      // full path to the configuration folder
+      final String confDirectory = String.format(CONF_FOLDER_PATTERN, configuration.getOutput());
 
-        // Export all
-        // export each linked quality profile
-        exportAllQualityProfiles(model, profileExporter, confDirectory);
+      // create the configuration folder
+      final File configFolder = new File(confDirectory);
+      final boolean success = configFolder.mkdirs();
+      if (!success && !configFolder.exists()) {
+         // Directory creation failed
+         final String message = String.format(CNES_MKDIR_ERROR, confDirectory);
+         LOGGER.warning(message);
+      }
 
-        // quality gate information
-        final String qualityGateName = model.getQualityGate().getName();
-        final String qualityGateConf = model.getQualityGate().getConf();
-        // export the quality gate
-        gateExporter.export(qualityGateConf, confDirectory, qualityGateName);
-    }
+      // Export all
+      // export each linked quality profile
+      exportAllQualityProfiles(model, profileExporter, confDirectory);
 
-    /**
-     * Export all quality profiles related to a given report as xml file depending on exporter.
-     * @param report Modeling data containing data to export.
-     * @param exporter Class given the way to export previous data.
-     * @param dir Directory for output.
-     * @throws XmlException Thrown on xml error.
-     * @throws BadExportationDataTypeException Thrown if the data does not correspond to exporter.
-     * @throws OpenXML4JException Thrown on OpenXML error.
-     * @throws IOException Thrown on files error.
-     */
-    private static void exportAllQualityProfiles(final Report report, final IExporter exporter, final String dir)
-            throws XmlException, BadExportationDataTypeException, OpenXML4JException, IOException {
-        for(ProfileMetaData metaData : report.getProject().getQualityProfiles()) {
-            final Iterator<QualityProfile> iterator =
-                    report.getQualityProfiles().iterator();
-            boolean goOn = true;
-            while(iterator.hasNext() && goOn) {
-                final QualityProfile qp = iterator.next();
-                if(qp.getKey().equals(metaData.getKey())) {
-                    exporter.export(qp.getConf(), dir, qp.getKey());
-                    goOn = false;
-                }
+      // quality gate information
+      final String qualityGateName = model.getQualityGate().getName();
+      final String qualityGateConf = model.getQualityGate().getConf();
+      // export the quality gate
+      gateExporter.export(qualityGateConf, confDirectory, qualityGateName);
+   }
+
+   /**
+    * Export all quality profiles related to a given report as xml file depending on exporter.
+    *
+    * @param report   Modeling data containing data to export.
+    * @param exporter Class given the way to export previous data.
+    * @param dir      Directory for output.
+    * @throws XmlException                    Thrown on xml error.
+    * @throws BadExportationDataTypeException Thrown if the data does not correspond to exporter.
+    * @throws OpenXML4JException              Thrown on OpenXML error.
+    * @throws IOException                     Thrown on files error.
+    */
+   private static void exportAllQualityProfiles(final Report report,
+                                                final IExporter exporter,
+                                                final String dir) throws XmlException, BadExportationDataTypeException, OpenXML4JException, IOException {
+      for (ProfileMetaData metaData : report.getProject().getQualityProfiles()) {
+         final Iterator<QualityProfile> iterator = report.getQualityProfiles().iterator();
+         boolean goOn = true;
+         while (iterator.hasNext() && goOn) {
+            final QualityProfile qp = iterator.next();
+            if (qp.getKey().equals(metaData.getKey())) {
+               exporter.export(qp.getConf(), dir, qp.getKey());
+               goOn = false;
             }
-        }
-    }
+         }
+      }
+   }
 
-    /**
-     * Format a given filename pattern.
-     * Add the date and the project's name
-     * @param propertyName Name of pattern's property
-     * @param projectName Name of the current project
-     * @return a formatted filename
-     */
-    private static String formatFilename(final String propertyName, final String baseDir, final String projectName) {
-        // construct the filename by replacing date and name
-        return StringManager.getProperty(propertyName)
-                .replaceFirst(BASEDIR, baseDir)
-                .replaceAll(DATE, new SimpleDateFormat(StringManager.DATE_PATTERN).format(new Date()))
-                .replaceAll(NAME, projectName);
-    }
+   /**
+    * Format a given filename pattern.
+    * Add the date and the project's name
+    *
+    * @param propertyName Name of pattern's property
+    * @param projectName  Name of the current project
+    * @return a formatted filename
+    */
+   private static String formatFilename(final String propertyName, final String baseDir, final String projectName) {
+      // construct the filename by replacing date and name
+      return StringManager.getProperty(propertyName)
+              .replaceFirst(BASEDIR, baseDir)
+              .replaceAll(DATE, new SimpleDateFormat(StringManager.DATE_PATTERN).format(new Date()))
+              .replaceAll(NAME, projectName);
+   }
 
 }
